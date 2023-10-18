@@ -61,6 +61,8 @@ type extraSpecs struct {
 	ExtraTags          map[string]string                         `json:"extra_tags"`
 	SSHPublicKeys      []string                                  `json:"ssh_public_keys"`
 	Confidential       bool                                      `json:"confidential"`
+	SecurityEncryption string                                    `json:"security_encryption"`
+	SecureBoot         *bool                                     `json:"secure_boot"`
 }
 
 func (e *extraSpecs) cleanInboundPorts() {
@@ -143,6 +145,8 @@ func GetRunnerSpecFromBootstrapParams(data params.BootstrapInstance, controllerI
 		Tools:              tools,
 		Tags:               tags,
 		Confidential:       extraSpecs.Confidential,
+		SecurityEncryption: extraSpecs.SecurityEncryption,
+		SecureBoot:         extraSpecs.SecureBoot,
 	}
 
 	if err := spec.Validate(); err != nil {
@@ -164,6 +168,8 @@ type RunnerSpec struct {
 	Tags               map[string]*string
 	SSHPublicKeys      []string
 	Confidential       bool
+	SecurityEncryption string
+	SecureBoot         *bool
 }
 
 func (r RunnerSpec) Validate() error {
@@ -309,18 +315,24 @@ func (r RunnerSpec) GetNewVMProperties(networkInterfaceID string) (*armcompute.V
 
 	var managedDiskParams *armcompute.ManagedDiskParameters
 	var securityProfile *armcompute.SecurityProfile
+
+	securityEncryptionType := to.Ptr(armcompute.SecurityEncryptionTypesVMGuestStateOnly)
+	if r.SecurityEncryption != "" {
+		securityEncryptionType = to.Ptr(armcompute.SecurityEncryptionTypes(r.SecurityEncryption))
+	}
+
 	if r.Confidential {
 		managedDiskParams = &armcompute.ManagedDiskParameters{
 			StorageAccountType: &r.StorageAccountType,
 			SecurityProfile: &armcompute.VMDiskSecurityProfile{
-				SecurityEncryptionType: to.Ptr(armcompute.SecurityEncryptionTypesVMGuestStateOnly),
+				SecurityEncryptionType: securityEncryptionType,
 			},
 		}
 
 		securityProfile = &armcompute.SecurityProfile{
 			SecurityType: to.Ptr(armcompute.SecurityTypesConfidentialVM),
 			UefiSettings: &armcompute.UefiSettings{
-				SecureBootEnabled: to.Ptr(true),
+				SecureBootEnabled: to.Ptr(*r.SecureBoot),
 				VTpmEnabled:       to.Ptr(true),
 			},
 		}

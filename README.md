@@ -102,6 +102,14 @@ To this end, this provider supports the following extra specs schema:
             "type": "boolean",
             "description": "The selected virtual machine size is confidential."
         },
+        "secure_boot": {
+            "type": "boolean",
+            "description": "Secure boot is enabled, default true"
+        },
+        "security_encryption": {
+            "type": "string",
+            "description": "OSDisk security encryption type"
+        },
         "open_inbound_ports": {
             "type": "object",
             "description": "A map of protocol to list of inbound ports to open.",
